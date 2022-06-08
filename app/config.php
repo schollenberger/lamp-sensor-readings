@@ -8,6 +8,7 @@ $db_password = "password";
 
 // Simulate latency, in seconds
 $latency = 0;
+$debug_log = true;
 
 // Cache configuration
 $enable_cache = false;
