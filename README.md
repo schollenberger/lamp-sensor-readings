@@ -48,7 +48,7 @@
     rm docker_cid.tmp
     ```
 
-## Initialize docker container
+## First Time Setup
 
   The ubuntu lamp docker container persist everything in the app and mysql
   directories. The app directory content comes from this repo but you have to
@@ -83,8 +83,8 @@
   As the Web App is using a session object to store the logged in user, it takes
   a bit more using `curl` to emulate an application using this web app.
 
-  First call the basic URL with the -v option and retrieve the session id.
-  Here an example with manually formatted output:
+  - First call the basic URL with the -v option and retrieve the session id.
+    Here an example with manually formatted output:
     ```
     $  curl -v http://localhost
     * Rebuilt URL to: localhost/
@@ -136,14 +136,13 @@
     </html>
     ```
 
-  From this output extract the session ID and store it in an environment
-  variable.
-  Example:
+  - From this output extract the session ID and store it in an environment
+    variable.
     ```
     export curl_session="PHPSESSID=p0iiiqdeo73c4f1lca1rd7l99n"
-    ```    
+    ```
 
-  With this session login into the Web App (this time without verbose):
+  - With this session login into the Web App (this time without verbose):
     ```
     $ curl  -b $curl_session -d "username=Test User1" http://localhost
     <html>
@@ -175,10 +174,11 @@
     </html>
     ```
 
-  You are now logged in with this session. To add a sensor reading use a post
-  request specifying the sensor name (`sname`), location (`slocation`) and
-  sensor value (`svalue`).
-  Example:
+  - You are now logged in with this session. To add a sensor reading use a post
+    request specifying the sensor name (`sname`), location (`slocation`) and
+    sensor value (`svalue`).
+
+    Example:
     ```
     curl  -b $curl_session -d "sname=TstSensor2&slocation=Room2&svalue=8.1" http://localhost/sensor_value.php?sensor_read=yes
 

@@ -11,50 +11,55 @@ $server   = $_SERVER['SERVER_ADDR'];
 $db = open_db_connection($db_hostname, $db_port, $db_database, $db_username, $db_password);
 
 
-function log_debug($log_text)
-{
+function log_debug($log_text) {
 	// Writes debug message to the Apache error file
 	global $debug_log;  // defined outside in config.php
 	// log message to apache error
-	if ($debug_log)
-	{
+	if ($debug_log) {
 		file_put_contents('php://stderr', "Debug: [".$log_text."]\n");
 	}
 }
 // Simulate latency
 sleep($latency);
 
-log_debug("Procesing page...");
+log_debug("Procesing page index.php...");
 
-if (isset($_POST['username']))
-{
+// Display HTTP Request attributes
+log_debug("Get attributes:");
+foreach($_GET as $key => $value) {
+	log_debug("_GET[$key] = $value");
+}
+
+log_debug("POST attributes:");
+foreach($_POST as $key => $value) {
+	log_debug("_POST[$key] = $value");
+}
+log_debug("------------");
+
+if (isset($_POST['username'])) {
 	// This is a login request
 	log_debug("Login request received...");
 	process_login($_POST['username']);
 }
 
-if (isset($_GET['logout']))
-{
+if (isset($_GET['logout'])) {
 	log_debug("Logout request received...");
 	// This is a logout request
 	process_logout();
 }
 
-function process_login($username)
-{
+function process_login($username) {
 	// Simply write username to session data
 	$_SESSION['username'] = $username;
 }
 
-function process_logout()
-{
+function process_logout() {
 	// Unset all of the session variables.
 	$_SESSION = array();
 
 	// If it's desired to kill the session, also delete the session cookie.
 	// Note: This will destroy the session, and not just the session data!
-	if (ini_get("session.use_cookies"))
-	{
+	if (ini_get("session.use_cookies")) 	{
 		$params = session_get_cookie_params();
 		setcookie(session_name(), '', time() - 42000, $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
 	}
@@ -63,8 +68,7 @@ function process_logout()
 	session_destroy();
 }
 
-function open_db_connection($hostname, $port, $database, $username, $password)
-{
+function open_db_connection($hostname, $port, $database, $username, $password) {
 	log_debug("Opening DB connection...");
 	// Open a connection to the database
 	$db = new PDO("mysql:host=$hostname;port=$port;dbname=$database;charset=utf8", $username, $password);
@@ -72,8 +76,7 @@ function open_db_connection($hostname, $port, $database, $username, $password)
 }
 
 
-function retrieve_recent_uploads($db, $count)
-{
+function retrieve_recent_uploads($db, $count) {
 	log_debug("In retrieve_recent_uploads():");
 
 	// Print a message so that the user knows these records come from the DB.
@@ -82,13 +85,27 @@ function retrieve_recent_uploads($db, $count)
 	// Geting the latest records from the upload_images table
 	$sql = "SELECT * FROM sensor_readings ORDER BY timestamp DESC LIMIT $count";
 	$statement = $db->prepare($sql);
-	$statement->execute();
-	$rows = $statement->fetchAll(PDO::FETCH_ASSOC);
+	$rows = array();
+	try {
+	  $statement->execute();
+	  $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
+		log_debug("SQL SELECT returned ".$statement->rowcount()." entries.");
+  }
+	catch (PDOException  $e) {
+		error_log("INT001: SQL Exception occurred on reading sensor data table.");
+    //error_log("INT001: SQL Query: ".$statement->queryString);
+    //error_log("INT001: SQLSTATE[".$statement->errorInfo()[0]."] ErrorNo [".$statement->errorInfo()[1]);
+    //error_log("INT001: SQL Error Message: ".$statement->errorInfo()[2]);
+    error_log("INT001: Exception: ".$e);
+
+		echo "<br><H1>SQL Exception occurred on reading sensor data</H1>";
+    echo "SQLSTATE[".$statement->errorInfo()[0]."] ErrorNo [".$statement->errorInfo()[1]."<br>";
+    echo "SQL Error Message: ".$statement->errorInfo()[2]."<br>";
+	}
 	return $rows;
 }
 
-function open_memcache_connection($hostname)
-{
+function open_memcache_connection($hostname) {
 	// Open a connection to the memcache server
 	$mem = new Memcached();
 	$mem->addServer($hostname, 11211);
@@ -111,8 +128,7 @@ echo "<title>Sensor Readings Application</title>";
 echo "</head>";
 echo "<body>";
 
-if (isset($_SESSION['username']))
-{
+if (isset($_SESSION['username'])) {
   $username = $_SESSION['username'];
 	// This section is shown when user is login
 	echo "<table width=100% border=0>";
@@ -145,8 +161,7 @@ if (isset($_SESSION['username']))
 		echo "<input type='submit' value='Go' id='submit_button' name='submit_button' enabled>";
 	echo "</form>";
 }
-else
-{
+else {
 	// This section is shown when user is not login
 	echo "<table width=100% border=0>";
 		echo "<tr>";
@@ -166,8 +181,7 @@ else
 }
 
 // Get the most recent N images
-if ($enable_cache)
-{
+if ($enable_cache) {
 	// Attemp to get the cached records for the front page
 	$mem = open_memcache_connection($cache_server);
 	$readings = $mem->get("front_page");
@@ -179,8 +193,7 @@ if ($enable_cache)
 		$mem->set("front_page", $readings, time()+86400);
 	}
 }
-else
-{
+else {
 	// This statement get the last 10 records from the database
 	$readings = retrieve_recent_uploads($db, 10);
 }
@@ -188,8 +201,7 @@ else
 // Display the sensor readings
 echo "<br>&nbsp;<br>";
 echo "<table width=100% border=1>";
-foreach ($readings as $reading)
-{
+foreach ($readings as $reading) {
 	$user = $reading["username"];
 	$ts = $reading["timestamp"];
 	$sname = $reading["sensor_name"];
