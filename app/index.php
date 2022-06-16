@@ -1,40 +1,23 @@
 <?php
 /*
+ * Main page
  *
  * The first part handles application logic.
  *
  */
 
-include("config.php");
+require("php/config.php");
 session_start();
-$server   = $_SERVER['SERVER_ADDR'];
-$db = open_db_connection($db_hostname, $db_port, $db_database, $db_username, $db_password);
+require("php/utils.inc.php"); // this include opens the DB connection.
 
-
-function log_debug($log_text) {
-	// Writes debug message to the Apache error file
-	global $debug_log;  // defined outside in config.php
-	// log message to apache error
-	if ($debug_log) {
-		file_put_contents('php://stderr', "Debug: [".$log_text."]\n");
-	}
-}
 // Simulate latency
 sleep($latency);
 
 log_debug("Procesing page index.php...");
 
-// Display HTTP Request attributes
-log_debug("Get attributes:");
-foreach($_GET as $key => $value) {
-	log_debug("_GET[$key] = $value");
-}
-
-log_debug("POST attributes:");
-foreach($_POST as $key => $value) {
-	log_debug("_POST[$key] = $value");
-}
-log_debug("------------");
+log_debug("_GET = ".print_r($_GET, true));
+log_debug("_POST = ".print_r($_POST, true));
+log_debug("_SESSION = ".print_r($_SESSION, true));
 
 if (isset($_POST['username'])) {
 	// This is a login request
@@ -68,43 +51,6 @@ function process_logout() {
 	session_destroy();
 }
 
-function open_db_connection($hostname, $port, $database, $username, $password) {
-	log_debug("Opening DB connection...");
-	// Open a connection to the database
-	$db = new PDO("mysql:host=$hostname;port=$port;dbname=$database;charset=utf8", $username, $password);
-	return $db;
-}
-
-
-function retrieve_recent_uploads($db, $count) {
-	log_debug("In retrieve_recent_uploads():");
-
-	// Print a message so that the user knows these records come from the DB.
-	echo "Getting latest $count records from database.<br>";
-
-	// Geting the latest records from the upload_images table
-	$sql = "SELECT * FROM sensor_readings ORDER BY timestamp DESC LIMIT $count";
-	$statement = $db->prepare($sql);
-	$rows = array();
-	try {
-	  $statement->execute();
-	  $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
-		log_debug("SQL SELECT returned ".$statement->rowcount()." entries.");
-  }
-	catch (PDOException  $e) {
-		error_log("INT001: SQL Exception occurred on reading sensor data table.");
-    //error_log("INT001: SQL Query: ".$statement->queryString);
-    //error_log("INT001: SQLSTATE[".$statement->errorInfo()[0]."] ErrorNo [".$statement->errorInfo()[1]);
-    //error_log("INT001: SQL Error Message: ".$statement->errorInfo()[2]);
-    error_log("INT001: Exception: ".$e);
-
-		echo "<br><H1>SQL Exception occurred on reading sensor data</H1>";
-    echo "SQLSTATE[".$statement->errorInfo()[0]."] ErrorNo [".$statement->errorInfo()[1]."<br>";
-    echo "SQL Error Message: ".$statement->errorInfo()[2]."<br>";
-	}
-	return $rows;
-}
-
 function open_memcache_connection($hostname) {
 	// Open a connection to the memcache server
 	$mem = new Memcached();
@@ -123,7 +69,7 @@ function open_memcache_connection($hostname) {
 echo "<html>";
 echo "<head>";
 echo "<META http-equiv='Content-Type' content='text/html; charset=UTF-8'>";
-echo "<title>Sensor Readings Application</title>";
+echo "<title>$page_title</title>";
 //echo "<script src='demo.js'></script>";
 echo "</head>";
 echo "<body>";
@@ -145,7 +91,7 @@ if (isset($_SESSION['username'])) {
 	echo "This application displays sensor readings, that you can manually";
 	echo "enter under your user name.<br>&nbsp;<br>";
 	echo "<br>";
-	echo "<form action='sensor_value.php?sensor_read=yes' method='post'>";
+	echo "<form action='insert_sensor_value.php?sensor_read=yes' method='post'>";
 		echo "<table border=2>";
 			echo "<tr>";
 				echo "<td><label col='sensor'>Sensor Name:</label></td>";
@@ -160,6 +106,9 @@ if (isset($_SESSION['username'])) {
 		echo "</table>";
 		echo "<input type='submit' value='Go' id='submit_button' name='submit_button' enabled>";
 	echo "</form>";
+	echo "<HR>";
+  echo "<a href='show_diagram.php?sname=Temp&sloc=Kitchen'>Diagram</a>";
+	echo "<HR>";
 }
 else {
 	// This section is shown when user is not login
@@ -188,14 +137,14 @@ if ($enable_cache) {
 	if (!$readings)
 	{
 		// If there is no such cached record, get it from the database
-		$readings = retrieve_recent_uploads($db, 10);
+		$readings = get_recent_sensor_values($db, $db_sensor_table, 10);
 		// Then put the record into cache
 		$mem->set("front_page", $readings, time()+86400);
 	}
 }
 else {
 	// This statement get the last 10 records from the database
-	$readings = retrieve_recent_uploads($db, 10);
+	$readings = get_recent_sensor_values($db, $db_sensor_table, 10);
 }
 
 // Display the sensor readings
@@ -224,6 +173,6 @@ echo "Session ID: ".$session_id;
 echo "</body>";
 echo "</html>";
 
-log_debug("Procesing page...Done.");
+log_debug("... done for this page.");
 
 ?>
