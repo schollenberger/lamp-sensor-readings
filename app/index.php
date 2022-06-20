@@ -18,11 +18,36 @@ log_debug("Procesing page index.php...");
 log_debug("_GET = ".print_r($_GET, true));
 log_debug("_POST = ".print_r($_POST, true));
 log_debug("_SESSION = ".print_r($_SESSION, true));
+log_debug("params = ".print_r($_SESSION, true));
 
 if (isset($_POST['username'])) {
 	// This is a login request
-	log_debug("Login request received...");
-	process_login($_POST['username']);
+	log_debug("Login request received for user [".$_POST['username']."] ...");
+
+	$username = escape_input($_POST['username']);
+  $success = false;
+
+	if(isset($_POST['password'])) {
+		$result = authenticate_user($db, $username, $_POST['password']);
+		if ($result['success']) {
+			$db_username = $result['db_username'];
+			process_login($db_username);
+			$success = true;
+			log_debug("... success with db user [".$db_username."].");
+		}
+		else {
+			log_debug("User [".$username."] - Login failed.");
+		}
+	}
+	else {
+		log_debug("User [".$username."] - No password field in request.");
+		echo "<H2>No Password provided !!</H2>";
+	}
+	if (! $success) {
+		echo "<H1>Login failed !!</H1>";
+		echo "<a href='index.php'>Back</a>";
+		die("<br");
+	}
 }
 
 if (isset($_GET['logout'])) {
@@ -91,7 +116,7 @@ if (isset($_SESSION['username'])) {
 	echo "This application displays sensor readings, that you can manually";
 	echo "enter under your user name.<br>&nbsp;<br>";
 	echo "<br>";
-	echo "<form action='insert_sensor_value.php?sensor_read=yes' method='post'>";
+	echo "<form action='sensor_values.php' method='post'>";
 		echo "<table border=2>";
 			echo "<tr>";
 				echo "<td><label col='sensor'>Sensor Name:</label></td>";
@@ -114,11 +139,12 @@ else {
 	// This section is shown when user is not login
 	echo "<table width=100% border=0>";
 		echo "<tr>";
-			echo "<td><H1>$server</H1></td>";
-			echo "<td align='right'>";
+			echo "<td width=\"60%\"><H1>$server</H1></td>";
+			echo "<td align='left'>";
 				echo "<form action='index.php' method='post'>";
-					echo "Enter Your Name: <br>";
-					echo "<input type='text' id='username' name ='username' size=20><br>";
+					echo "Please login: <br>";
+					echo "<nobr>User Name: <input type='text' id='username' name ='username' size=20></nobr>&nbsp;";
+					echo "<nobr>Password: <input type='password' id='password' name ='password' size=20></nobr><br>";
 					echo "<input type='submit' value='login'/>";
 				echo "</form>";
 			echo "</td>";

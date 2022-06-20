@@ -80,127 +80,73 @@
 
 ## Using CURL to add sensor records
 
-  As the Web App is using a session object to store the logged in user, it takes
-  a bit more using `curl` to emulate an application using this web app.
+  Since of version 3, this app supports Bearer Tokens to authorize for some
+  requests (not all), especially to read or add  sensor values using
+  `http://localhost/sensor_values.php`.
 
-  - First call the basic URL with the -v option and retrieve the session id.
-    Here an example with manually formatted output:
-    ```
-    $  curl -v http://localhost
-    * Rebuilt URL to: localhost/
-    *   Trying 127.0.0.1...
-    * TCP_NODELAY set
-    * Connected to localhost (127.0.0.1) port 80 (#0)
-    > GET / HTTP/1.1
-    > Host: localhost
-    > User-Agent: curl/7.58.0
-    > Accept: */*
-    >
-    < HTTP/1.1 200 OK
-    < Date: Wed, 08 Jun 2022 17:05:32 GMT
-    < Server: Apache/2.4.41 (Ubuntu)
-    < Set-Cookie: PHPSESSID=p0iiiqdeo73c4f1lca1rd7l99n; path=/
-    < Expires: Thu, 19 Nov 1981 08:52:00 GMT
-    < Cache-Control: no-store, no-cache, must-revalidate
-    < Pragma: no-cache
-    < Vary: Accept-Encoding
-    < Content-Length: 1764
-    < Content-Type: text/html; charset=UTF-8
-    <
+  For authorization the request either has to contain a valid token of an
+  already logged in session or an HTTP Authorization Header bearer token.
+  This makes it much easier for IOT or other stateless clients to insert
+  sensor values.
 
-    <html>
-      <head>
-        <META http-equiv='Content-Type' content='text/html; charset=UTF-8'>
-        <title>Sensor Readings Application</title>
-      </head>
-      <body>
-        <table width=100% border=0>
-          <tr>
-            <td><H1>172.17.0.2</H1></td>
-            <td align='right'>
-              <form action='index.php' method='post'>Enter Your Name: <br>
-                <input type='text' id='username' name ='username' size=20><br>
-                <input type='submit' value='login'/>
-              </form>
-            </td>
-          </tr>
-        </table>
-        <HR>Login to start uploading sensor values.<br>&nbsp;<br>
-        Getting latest 10 records from database.<br><br>&nbsp;<br>
-        <table width=100% border=1>
-        ...
-        </table>
+  In order to simulate a client that supports sessions with curl, refer to
+  document   `Curl-commands-with-web-session.md` in this repo for an example.
 
-        <HR><hr>Session ID: p0iiiqdeo73c4f1lca1rd7l99n
-      </body>
-    </html>
-    ```
+  If you want to use an access token, you may retrieve it from the web app.
+  As a logged in user (either curl or web browser) enter:
+  `http://localhost/access_token.php`.
 
-  - From this output extract the session ID and store it in an environment
-    variable.
-    ```
-    export curl_session="PHPSESSID=p0iiiqdeo73c4f1lca1rd7l99n"
-    ```
+  It returns the access token of the current user which you set as the bearer
+  token in your client code on the IOT device or set it on the shell
+  environment using:
+  ```
+  export token="..."
+  ```
 
-  - With this session login into the Web App (this time without verbose):
-    ```
-    $ curl  -b $curl_session -d "username=Test User1" http://localhost
-    <html>
-      <head>
-        <META http-equiv='Content-Type' content='text/html; charset=UTF-8'>
-        <title>Sensor Readings Application</title>
-      </head>
-      <body>
-        <table width=100% border=0>
-          <tr>
-            <td><H1>172.17.0.2</H1></td>
-            <td align='right'>Test User1<br><a href='index.php?logout=yes'>Logout</a></td>
-          </tr>
-        </table>
-        <HR>
-        This application displays sensor readings, that you can manually enter
-        under your user name.<br>&nbsp;<br><br>
-        <form action='sensor_value.php?sensor_read=yes' method='post'>
-          <table border=2>
-          ...
-          </table>
-          <input type='submit' value='Go' id='submit_button' name='submit_button' enabled>
-        </form>
-        Getting latest 10 records from database.<br>
-        ...
-        <HR>
-        <hr>Session ID: gkbdfe96rr61ugh3jsrotk4gcn
-      </body>
-    </html>
-    ```
+  As it is part of the HTTP header, this token works as well in some GET
+  requests, e.g. `http://localhost/sensor_values`. Example:
+  ```
+  curl -b $curl_session -X GET http://localhost/sensor_values.php
+  ```
+  or
+  ```
+  curl -H  "Authorization: Bearer $token" -X GET http://localhost/sensor_values.php
+  ```
 
-  - You are now logged in with this session. To add a sensor reading use a post
-    request specifying the sensor name (`sname`), location (`slocation`) and
-    sensor value (`svalue`).
+  Assuming you have set a  bearer token, you create a new sensor reading on
+  the server by issueing an HTTP-POST request specifying the
+  sensor name (`sname`), location (`slocation`) and sensor value (`svalue`).
 
     Example:
     ```
-    curl  -b $curl_session -d "sname=TstSensor2&slocation=Room2&svalue=8.1" http://localhost/sensor_value.php?sensor_read=yes
+    curl  -H  "Authorization: Bearer $token" -X POST -d "sname=TstSensor2&slocation=Room2&svalue=9.1" http://localhost/sensor_value.php
+
+
+    <!-- Page header -->
 
     <html>
-      <head>
-        <META http-equiv='Content-Type' content='text/html; charset=UTF-8'>
-        <title>Scalable Web Application</title>
-      </head>
+    <head>
+      <META http-equiv='Content-Type' content='text/html; charset=UTF-8'>
+      <title>Sensor Reading Application</title>
+    </head>
     <body>
 
-
-    Hello user [Test User1].<br>
     New sensor value has been added.<br>
-    <table width=100% border = 1>
+      <table width=100% border = 1>
       <tr>
-        <td>Username</td><td>Sensor Name</td><td>Location</td><td>Sensor Value</td>
-      </tr>
+        <td>Username</td>
+        <td>Sensor Name</td>
+        <td>Location</td><td>Sensor Value</td><
+      /tr>
       <tr>
-        <td>Test User1</td><td>TstSensor2</td><td>Room2</td><td>8.1</td>
+        <td>Demo User</td>
+        <td>TstSensor2</td>
+        <td>Room2</td>
+        <td>9.1</td>
       </tr>
-    <table>
+      <table>
     <a href='index.php'>Back</a></body>
+    </html>
     ```
 
   That's it.
