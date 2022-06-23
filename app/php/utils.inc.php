@@ -40,6 +40,27 @@ function guidv4() {
     return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
 }
 
+/*
+ * define some functions that are not available in PHP 7
+ */
+// source: Laravel Framework
+// https://github.com/laravel/framework/blob/8.x/src/Illuminate/Support/Str.php
+if (!function_exists('str_starts_with')) {
+    function str_starts_with($haystack, $needle) {
+        return (string)$needle !== '' && strncmp($haystack, $needle, strlen($needle)) === 0;
+    }
+}
+if (!function_exists('str_ends_with')) {
+    function str_ends_with($haystack, $needle) {
+        return $needle !== '' && substr($haystack, -strlen($needle)) === (string)$needle;
+    }
+}
+if (!function_exists('str_contains')) {
+    function str_contains($haystack, $needle) {
+        return $needle !== '' && mb_strpos($haystack, $needle) !== false;
+    }
+}
+
 /* Get header Authorization
  * from: https://stackoverflow.com/questions/40582161/how-to-properly-use-bearer-tokens
  *

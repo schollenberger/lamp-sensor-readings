@@ -96,6 +96,7 @@ elseif ($_SERVER['REQUEST_METHOD'] == 'POST') {
       log_debug("... sensor read is valid: ($username,$sname,$slocation,$svalue)");
       $rc = add_sensor_reading($db, $username, $sname, $slocation, $svalue);
       if ($rc == 1) {
+        log_debug("New entry added: User: ".$username." - SensorName: ".$sname." - Location: ".$slocation." - Value: ".$svalue.".");
         echo "New sensor value has been added.<br>";
         echo "<table width=100% border = 1>";
           echo "<tr>";
@@ -113,10 +114,12 @@ elseif ($_SERVER['REQUEST_METHOD'] == 'POST') {
     else {
       echo "<br>Sensor Name and Sensor Value cannot be empty.<br>";
       echo "Sensor Value has to be numeric.<br><br>";
+      http_response_code(400);
     }
   }
   else {
     echo "<br>Invalid POST request parameters.<br><br>";
+    http_response_code(400);
   }
 }
 else {
