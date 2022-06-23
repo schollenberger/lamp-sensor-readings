@@ -1,7 +1,7 @@
 # lamp-sensor-readings
 
-  Web App to run on a Simple-Lamp Docker container which receives and persists
-  sensor readings.
+  Web App to run on a Simple-Lamp Docker container or a Raspberry Pi which
+  receives and persists sensor readings.
 
   This project is inspired by:
 
@@ -12,14 +12,58 @@
   `mattrayner/lamp` and mount the `app` and `mysql` directories from this
   git repo into the container so that the container itself remains stateless.
 
-  Note: It is a bad idea to add the mysql database files to Git!
+  Note: It is a bad idea to add the mysql database files back to Git
+        Therefore the mysql directory has been added to `.gitignore`!
 
   If you want to move the database to a different instance, exec into
-  the container, export the database `sensor_data`to the `/app` directory,
+  the container, export the database `sensor_data` to the `/app/sql` directory,
   kill the container, and then commit the changes to the app directory to Git.
 
   To create the WebApp from the Git repo, let the container install mysql again
   and then import the database content from within the container.
+
+  On a Pi with the Lamp stack installed, rename the directory `/var/www/html`
+  and create a soft link to the Git repo's app directory.
+  In production you want to copy the Web files and set file owner and access
+  rights correctly. In addition, create the database `sensor_data` and import
+  the tables from the `app/sql` directory.
+
+## Web App design
+
+  One design goal of the Lamp Sensor Readings Web app is that it is good for
+  running on a Web instance in the cloud as well. In order to make this app
+  robust against hackers some precautions have been made:
+    - move PHP files that contain functions or secrets to `app/php`. In
+      production you can prevent Web Server to access this directory via
+      the file `.htaccess`.
+    - Add user authentication and only store the hashed password in the
+      database.
+    - Require a HTTP Header Authorization Bearer token for Sensor devices to
+      add sensor readings.
+    - Escape form input to make it harder for Cross-Site-Scriptng and SQL
+      injection attacks.
+      (Inspired by: https://benhoyt.com/writings/dont-sanitize-do-escape/)   
+
+## Other Links
+
+  - HTML purifier (not used yet)
+    https://github.com/cure53/DOMPurify
+
+  - Full scenario tutorial with ESP32 client and Pi LAMP Server
+    https://randomnerdtutorials.com/esp32-esp8266-raspberry-pi-lamp-server/
+
+  - Store Sensor data on Mysql DB via Web Server in the cloud
+    https://randomnerdtutorials.com/esp32-esp8266-mysql-database-php/
+
+  - Install LAMP Server on Raspberry Pi
+    https://randomnerdtutorials.com/raspberry-pi-apache-mysql-php-lamp-server/
+
+  - Doc from `qyjohn/simple-lamp` about LAMP stack install see:
+    `Simple-lamp-webapp-install-readme.md`
+
+  - Simple LAMP Docker app - own readme in private repo
+    https://github.com/schollenberger/docker-general/blob/main/simple-lamp/simple-lamp_readme.md
+
 
 ## Start the container and work with it
 
