@@ -21,11 +21,19 @@ if (! isset($_SESSION['username'])) {
 $username = $_SESSION['username'];
 $sname = $_GET['sname'];
 $sloc = $_GET['sloc'];
+$limit = $_GET['limit'];
+
+if(!$sname) {
+  $sname = "%";
+}
+if(!$sloc) {
+  $sloc = "Test";
+}
 
 log_debug("Logged in as user [$username] on server [$server]");
-log_debug("Show diagram for sensor: [$sname] in location [$sloc]");
+log_debug("Show diagram for sensor: [$sname] in location [$sloc] and limit [$limit].");
 
-$table = get_selected_sensor_values($db, $db_sensor_table, $sname, $sloc);
+$table = get_selected_sensor_values($db, $db_sensor_table, $username, $sname, $sloc, $limit);
 
 // The data is stored in varable $table - the rest is javascript
 ?>

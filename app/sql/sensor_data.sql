@@ -16,7 +16,7 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `upload_images`
+-- Table structure for table `sensor_readings`
 --
 
 DROP TABLE IF EXISTS `sensor_readings`;
@@ -29,6 +29,7 @@ CREATE TABLE `sensor_readings` (
   `sensor_name` varchar(255),
   `location` varchar(255),
   `value` decimal(4,2),
+  `battery` decimal(4,2),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -39,10 +40,10 @@ CREATE TABLE `sensor_readings` (
 
 LOCK TABLES `sensor_readings` WRITE;
 /*!40000 ALTER TABLE `sensor_readings` DISABLE KEYS */;
-INSERT INTO `sensor_readings` VALUES (1,'Demo User','2022-06-01 09:00:00', "Moisture", "Room1", 0.61 ),
-(2,'Demo User','2022-06-01 10:00:00', "Moisture", "Room1", 0.80 ),
-(3,'Demo User','2022-06-01 10:00:00', "Moisture", "Room1", 1.00 ),
-(4,'Demo User','2022-06-01 10:00:00', "Moisture", "Room1", 0.50 );
+INSERT INTO `sensor_readings` VALUES (1,'Demo User','2022-06-01 09:00:00', "Moisture", "Room1", 0.61, -1.0),
+(2,'Demo User','2022-06-01 10:00:00', "Moisture", "Room1", 0.80, 0.0 ),
+(3,'Demo User','2022-06-01 10:00:00', "Moisture", "Room1", 1.00, 4.26 ),
+(4,'Demo User','2022-06-01 10:00:00', "Moisture", "Room1", 0.50, 3.7 );
 /*!40000 ALTER TABLE `sensor_readings` ENABLE KEYS */;
 UNLOCK TABLES;
 

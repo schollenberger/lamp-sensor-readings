@@ -70,16 +70,18 @@ if (! $authenticated) {
 
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
   log_debug("Get sensor values for user [$username]");
-  echo "Sensor valeus für user [".$username."].<br>";
+  echo "Sensor values for user [".$username."].<br>";
+  // Dummy values for now
   $sname = "Test Sensor";
   $slocation = "Test Location";
   $svalue = 22.67;
+  $sbattery = 4.26;
 
   echo "<table width=100% border = 1>";
     echo "<tr>";
-      echo "<td>Username</td><td>Sensor Name</td><td>Location</td><td>Sensor Value</td>";
+      echo "<td>Username</td><td>Sensor Name</td><td>Location</td><td>Sensor Value</td><td>Sensor Battery Voltage</td>";
     echo "</tr><tr>";
-    echo "<td>Test$username</td><td>$sname</td><td>$slocation</td><td>$svalue</td>";
+    echo "<td>Test$username</td><td>$sname</td><td>$slocation</td><td>$svalue</td><td>$sbattery</td>";
     echo "</tr>";
   echo "<table>";
 
@@ -90,19 +92,23 @@ elseif ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $sname = $_POST['sname'];
     $slocation = $_POST['slocation'];
     $svalue = $_POST['svalue'];
+    $sbattery = "n.a.";
+    if(isset($_POST['sbattery'])) {
+      $sbattery = $_POST['sbattery'];
+    }
     // parameter check
     if (! empty($sname) && ! empty($svalue) && is_numeric($svalue))
     {
-      log_debug("... sensor read is valid: ($username,$sname,$slocation,$svalue)");
-      $rc = add_sensor_reading($db, $username, $sname, $slocation, $svalue);
+      log_debug("... sensor read is valid: ($username,$sname,$slocation,$svalue,$sbattery)");
+      $rc = add_sensor_reading($db, $username, $sname, $slocation, $svalue, $sbattery);
       if ($rc == 1) {
-        log_debug("New entry added: User: ".$username." - SensorName: ".$sname." - Location: ".$slocation." - Value: ".$svalue.".");
+        log_debug("New entry added: User: ".$username." - SensorName: ".$sname." - Location: ".$slocation." - Value: ".$svalue." - Battery: ".$sbattery.".");
         echo "New sensor value has been added.<br>";
         echo "<table width=100% border = 1>";
           echo "<tr>";
-            echo "<td>Username</td><td>Sensor Name</td><td>Location</td><td>Sensor Value</td>";
+            echo "<td>Username</td><td>Sensor Name</td><td>Location</td><td>Sensor Value</td><td>Sensor Battery Voltage</td>";
           echo "</tr><tr>";
-          echo "<td>$username</td><td>$sname</td><td>$slocation</td><td>$svalue</td>";
+          echo "<td>$username</td><td>$sname</td><td>$slocation</td><td>$svalue</td><td>$sbattery</td>";
           echo "</tr>";
         echo "<table>";
       }

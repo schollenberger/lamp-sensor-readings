@@ -83,6 +83,25 @@ function open_memcache_connection($hostname) {
 	return $mem;
 }
 
+function help_text() {
+  $htxt = "This application captures sensor readings in a database. ";
+	$htxt .= "The main page displays the last 10 sensor readings. ";
+	$htxt .= "The app supports different users. They log in via their ";
+	$htxt .= "username and password. ";
+	$htxt .= "<br>";
+	$htxt .= "Being logged in:";
+	$htxt .= "<ul>";
+	$htxt .= "<li>The list of sensor readings contains own values only.</li>";
+	$htxt .= "<li>Users may add sensor reading using the Web UI.</li>";
+	$htxt .= "<li>Sensor readings may be displayed in a diagram.</li>";
+	$htxt .= "</ul>";
+//	$htxt .= "<br>&nbsp;<br>";
+	$htxt .= "";
+	$htxt .= "";
+
+	return $htxt;
+}
+
 ?>
 
 <?php
@@ -112,10 +131,10 @@ if (isset($_SESSION['username'])) {
 	echo "</tr>";
 	echo "</table>";
 	echo "<HR>";
-
-	echo "This application displays sensor readings, that you can manually";
-	echo "enter under your user name.<br>&nbsp;<br>";
-	echo "<br>";
+	echo help_text();
+	echo "<HR>";
+	echo "Add a sensor reading under your user name:<br>&nbsp;<br>";
+	//echo "<br>";
 	echo "<form action='sensor_values.php' method='post'>";
 		echo "<table border=2>";
 			echo "<tr>";
@@ -125,18 +144,45 @@ if (isset($_SESSION['username'])) {
 				echo "<td><label col='user'>Location:</label></td>";
 				echo "<td><input type='text' name='slocation' id='slocation'></td>";
 			echo "</tr><tr>";
-			        echo "<td><label col='user'>Sensor Value:</label></td>";
+				echo "<td><label col='user'>Sensor Value:</label></td>";
 				echo "<td><input type='text' name='svalue' id='svalue'></td>";
+			echo "</tr><tr>";
+				echo "<td><label col='user'>Battery Value:</label></td>";
+				echo "<td><input type='text' name='sbattery' id='sbattery'></td>";
 			echo "</tr>";
 		echo "</table>";
+		echo "<br>";
 		echo "<input type='submit' value='Go' id='submit_button' name='submit_button' enabled>";
 	echo "</form>";
 	echo "<HR>";
-  echo "<a href='show_diagram.php?sname=Temp&sloc=Kitchen'>Diagram</a>";
+
+	echo "Display diagram for a specific location and a sensor name:<br>&nbsp;<br>";
+	//echo "<br>";
+	echo "<form action='show_diagram.php' method='get'>";
+		echo "<table border=2>";
+			echo "<tr>";
+				echo "<td><label col='user'>Location:</label></td>";
+				echo "<td><input type='text' name='sloc' id='sloc'></td>";
+			echo "</tr><tr>";
+				echo "<td><label col='sensor'>Sensor Name:</label></td>";
+				echo "<td><input type='text' name='sname' id='sname'></td>";
+			echo "</tr><tr>";
+				echo "<td><label col='user'>Point Limit:</label></td>";
+				echo "<td><input type='text' name='limit' id='limit'></td>";
+			echo "</tr>";
+		echo "</table>";
+		echo "<br>";
+		echo "<input type='submit' value='Display Diagram' id='submit_diagram' name='submit_diagram' enabled>";
+	echo "</form>";
+  //echo "<a href='show_diagram.php?sname=Temp&sloc=Kitchen'>Diagram</a>";
 	echo "<HR>";
+
+	echo "Last 10 sensor readings for user $username:";
+	echo "<br>&nbsp;<br>";
 }
 else {
-	// This section is shown when user is not login
+	// This section is shown when user is not logged in
+	$username = Null;
 	echo "<table width=100% border=0>";
 		echo "<tr>";
 			echo "<td width=\"60%\"><H1>$server</H1></td>";
@@ -151,8 +197,12 @@ else {
 		echo "</tr>";
 	echo "</table>";
 	echo "<HR>";
-
-	echo "Login to start uploading sensor values.<br>&nbsp;<br>";
+	echo help_text();
+	echo "<HR>";
+	echo "Login to start uploading sensor values or display diagrams.<br>&nbsp;<br>";
+	echo "<HR>";
+	echo "Last 10 sensor readings:";
+	echo "<br>&nbsp;<br>";
 }
 
 // Get the most recent N images
@@ -163,18 +213,17 @@ if ($enable_cache) {
 	if (!$readings)
 	{
 		// If there is no such cached record, get it from the database
-		$readings = get_recent_sensor_values($db, $db_sensor_table, 10);
+		$readings = get_recent_sensor_values($db, $db_sensor_table, 10, $username);
 		// Then put the record into cache
 		$mem->set("front_page", $readings, time()+86400);
 	}
 }
 else {
 	// This statement get the last 10 records from the database
-	$readings = get_recent_sensor_values($db, $db_sensor_table, 10);
+	$readings = get_recent_sensor_values($db, $db_sensor_table, 10, $username);
 }
 
-// Display the sensor readings
-echo "<br>&nbsp;<br>";
+// Display the sensor readings in a table
 echo "<table width=100% border=1>";
 foreach ($readings as $reading) {
 	$user = $reading["username"];
@@ -182,12 +231,14 @@ foreach ($readings as $reading) {
 	$sname = $reading["sensor_name"];
 	$loc = $reading["location"];
 	$sval = $reading["value"];
+	$sbattery = $reading["battery"];
 	echo "<tr>";
 	echo "<td align='left'>$user</td>";
 	echo "<td align='center'>$ts</td>";
 	echo "<td align='left'>$sname</td>";
 	echo "<td align='left'>$loc</td>";
 	echo "<td align='left'>$sval</td>";
+	echo "<td align='left'>$sbattery</td>";
 	echo "</tr>";
 }
 echo "</table>";

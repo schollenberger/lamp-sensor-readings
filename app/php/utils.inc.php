@@ -294,19 +294,23 @@ function set_user_token($db, $username, $token) {
 }
 
 
-function get_recent_sensor_values($db, $db_table, $count) {
+function get_recent_sensor_values($db, $db_table, $count, $username) {
 	log_debug("In get_recent_sensor_values():");
-
-	// Print a message so that the user knows these records come from the DB.
-	echo "Getting latest $count records from database table $db_table.<br>";
-
-	// Geting the latest records from the upload_images table
-	$sql = "SELECT * FROM $db_table ORDER BY timestamp DESC LIMIT $count";
-	$statement = $db->prepare($sql);
+  if ($username) {
+		log_debug("Getting latest $count records from database table $db_table for user $username.");
+		// Geting the latest records from the upload_images table
+		$sql = "SELECT * FROM $db_table WHERE username = '$username' ORDER BY timestamp DESC LIMIT $count";
+		$statement = $db->prepare($sql);
+	} else {
+		log_debug("Getting latest $count records from database table $db_table - no username set.");
+		// Geting the latest records from the upload_images table
+		$sql = "SELECT * FROM $db_table ORDER BY timestamp DESC LIMIT $count";
+		$statement = $db->prepare($sql);
+  }
 	$rows = array();
 	try {
 	  $statement->execute();
-	  $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
+		$rows = $statement->fetchAll(PDO::FETCH_ASSOC);
 		log_debug("SQL SELECT returned ".$statement->rowcount()." entries.");
   }
 	catch (PDOException  $e) {
@@ -315,11 +319,11 @@ function get_recent_sensor_values($db, $db_table, $count) {
 	return $rows;
 }
 
-function add_sensor_reading($db, $username, $sensor_name, $location, $sensor_value) {
+function add_sensor_reading($db, $username, $sensor_name, $location, $sensor_value, $battery_value) {
   // Add a new record to the sensor_readings table
 	log_debug("Adding sensor reading to DB...");
-  $sql = "INSERT INTO sensor_readings (username, sensor_name, location, value) VALUES (?, ?, ?, ?)";
-  $params = array($username, $sensor_name, $location ,$sensor_value);
+  $sql = "INSERT INTO sensor_readings (username, sensor_name, location, value, battery) VALUES (?, ?, ?, ?, ?)";
+  $params = array($username, $sensor_name, $location ,$sensor_value, $battery_value);
   $statement = $db->prepare($sql);
 
   $rowcount = 0;
