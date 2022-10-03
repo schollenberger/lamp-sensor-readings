@@ -10,7 +10,7 @@ function get_selected_sensor_values($db, $db_table, $username, $sname, $sloc, $l
   }
   try {
 
-    $result = $db->query("SELECT timestamp, value FROM $db_table where username = '$username' and sensor_name like '$sname' and location like '$sloc' limit $limit ;");
+    $result = $db->query("SELECT timestamp, value FROM $db_table where username = '$username' and sensor_name like '$sname' and location like '$sloc' order by timestamp desc limit $limit ;");
 
     $table['cols'] = array(array('label' => 'Datetime', 'type' => 'string'),array('label' => $sname, 'type' => 'number'));
 

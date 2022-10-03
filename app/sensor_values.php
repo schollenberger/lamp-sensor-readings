@@ -92,7 +92,7 @@ elseif ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $sname = $_POST['sname'];
     $slocation = $_POST['slocation'];
     $svalue = $_POST['svalue'];
-    $sbattery = "n.a.";
+    $sbattery = "-1";
     if(isset($_POST['sbattery'])) {
       $sbattery = $_POST['sbattery'];
     }
