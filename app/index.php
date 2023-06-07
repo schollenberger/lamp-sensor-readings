@@ -95,6 +95,9 @@ function help_text() {
 	$htxt .= "<li>Users may add sensor reading using the Web UI.</li>";
 	$htxt .= "<li>Sensor readings may be displayed in a diagram.</li>";
 	$htxt .= "</ul>";
+        $htxt .= "Water plant when moisture value is above 1.2";
+        $htxt .= "<br>";
+        $htxt .= "Charge battery when battery value is below of 3.7";
 //	$htxt .= "<br>&nbsp;<br>";
 	$htxt .= "";
 	$htxt .= "";
@@ -119,7 +122,35 @@ echo "</head>";
 echo "<body>";
 
 if (isset($_SESSION['username'])) {
-  $username = $_SESSION['username'];
+	$username = $_SESSION['username'];
+
+	if (isset($_SESSION['sloc'])) {
+		$session_sloc = $_SESSION['sloc'];
+		log_debug("Work Location found in session: [$session_sloc]");
+	}
+	else {
+		$session_sloc = "Work Room";
+		log_debug("Work Location not found in session using default <$session_sloc>.");
+	}
+
+	if (isset($_SESSION['sname'])) {
+		$session_sname = $_SESSION['sname'];
+		log_debug("Sensor Name found in session: [$session_sname]");
+	}
+	else {
+		$session_sname = "";
+		log_debug("Sensor Name not found in session.");
+	}
+
+	if (isset($_SESSION['limit'])) {
+		$session_limit = $_SESSION['limit'];
+		log_debug("Limit found in session: [$session_limit]");
+	}
+	else {
+		$session_limit = "";
+		log_debug("Limit not found in session: [$session_limit]");
+	}
+
 	// This section is shown when user is login
 	echo "<table width=100% border=0>";
 	echo "<tr>";
@@ -162,13 +193,13 @@ if (isset($_SESSION['username'])) {
 		echo "<table border=2>";
 			echo "<tr>";
 				echo "<td><label col='user'>Location:</label></td>";
-				echo "<td><input type='text' name='sloc' id='sloc'></td>";
+				echo "<td><input type='text' name='sloc' id='sloc' value='$session_sloc'></td>";
 			echo "</tr><tr>";
 				echo "<td><label col='sensor'>Sensor Name:</label></td>";
-				echo "<td><input type='text' name='sname' id='sname'></td>";
+				echo "<td><input type='text' name='sname' id='sname' value='$session_sname'></td>";
 			echo "</tr><tr>";
 				echo "<td><label col='user'>Point Limit:</label></td>";
-				echo "<td><input type='text' name='limit' id='limit'></td>";
+				echo "<td><input type='text' name='limit' id='limit' value='$session_limit'></td>";
 			echo "</tr>";
 		echo "</table>";
 		echo "<br>";

@@ -22,6 +22,10 @@ $username = $_SESSION['username'];
 $sname = $_GET['sname'];
 $sloc = $_GET['sloc'];
 $limit = $_GET['limit'];
+// store parameters in session
+$_SESSION['sname'] = $sname;
+$_SESSION['sloc'] = $sloc;
+$_SESSION['limit'] = $limit;
 
 if(!$sname) {
   $sname = "%";
@@ -32,6 +36,7 @@ if(!$sloc) {
 
 log_debug("Logged in as user [$username] on server [$server]");
 log_debug("Show diagram for sensor: [$sname] in location [$sloc] and limit [$limit].");
+log_debug("Storing diagram parameters in session...");
 
 $table = get_selected_sensor_values($db, $db_sensor_table, $username, $sname, $sloc, $limit);
 
