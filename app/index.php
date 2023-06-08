@@ -10,51 +10,7 @@ require("php/config.php");
 session_start();
 require("php/utils.inc.php"); // this include opens the DB connection.
 
-// Simulate latency
-sleep($latency);
-
-log_debug("Procesing page index.php...");
-
-log_debug("_GET = ".print_r($_GET, true));
-log_debug("_POST = ".print_r($_POST, true));
-log_debug("_SESSION = ".print_r($_SESSION, true));
-log_debug("params = ".print_r($_SESSION, true));
-
-if (isset($_POST['username'])) {
-	// This is a login request
-	log_debug("Login request received for user [".$_POST['username']."] ...");
-
-	$username = escape_input($_POST['username']);
-  $success = false;
-
-	if(isset($_POST['password'])) {
-		$result = authenticate_user($db, $username, $_POST['password']);
-		if ($result['success']) {
-			$db_username = $result['db_username'];
-			process_login($db_username);
-			$success = true;
-			log_debug("... success with db user [".$db_username."].");
-		}
-		else {
-			log_debug("User [".$username."] - Login failed.");
-		}
-	}
-	else {
-		log_debug("User [".$username."] - No password field in request.");
-		echo "<H2>No Password provided !!</H2>";
-	}
-	if (! $success) {
-		echo "<H1>Login failed !!</H1>";
-		echo "<a href='index.php'>Back</a>";
-		die("<br");
-	}
-}
-
-if (isset($_GET['logout'])) {
-	log_debug("Logout request received...");
-	// This is a logout request
-	process_logout();
-}
+// funcion definitions
 
 function process_login($username) {
 	// Simply write username to session data
@@ -95,14 +51,121 @@ function help_text() {
 	$htxt .= "<li>Users may add sensor reading using the Web UI.</li>";
 	$htxt .= "<li>Sensor readings may be displayed in a diagram.</li>";
 	$htxt .= "</ul>";
-        $htxt .= "Water plant when moisture value is above 1.2";
-        $htxt .= "<br>";
-        $htxt .= "Charge battery when battery value is below of 3.7";
-//	$htxt .= "<br>&nbsp;<br>";
+  $htxt .= "Water plant when moisture value is above 1.2";
+  $htxt .= "<br>";
+  $htxt .= "Charge battery when battery value is below of 3.7";
+  //	$htxt .= "<br>&nbsp;<br>";
 	$htxt .= "";
 	$htxt .= "";
 
 	return $htxt;
+}
+
+// Simulate latency
+sleep($latency);
+
+log_debug("Procesing page index.php...");
+
+log_debug("_GET = ".print_r($_GET, true));
+log_debug("_POST = ".print_r($_POST, true));
+log_debug("_SESSION = ".print_r($_SESSION, true));
+log_debug("params = ".print_r($_SESSION, true));
+
+// Handle different page invokations
+if (isset($_POST['username'])) {
+	// This is a login request
+	log_debug("Login request received for user [".$_POST['username']."] ...");
+
+	$username = escape_input($_POST['username']);
+  $success = false;
+
+	if(isset($_POST['password'])) {
+		$result = authenticate_user($db, $username, $_POST['password']);
+		if ($result['success']) {
+			$db_username = $result['db_username'];
+			process_login($db_username);
+			$success = true;
+			log_debug("... success with db user [".$db_username."].");
+		}
+		else {
+			log_debug("User [".$username."] - Login failed.");
+		}
+	}
+	else {
+		log_debug("User [".$username."] - No password field in request.");
+		echo "<H2>No Password provided !!</H2>";
+	}
+	if (! $success) {
+		echo "<H1>Login failed !!</H1>";
+		echo "<a href='index.php'>Back</a>";
+		die("<br");
+	}
+}
+
+if (isset($_GET['logout'])) {
+	log_debug("Logout request received...");
+	// This is a logout request
+	process_logout();
+}
+
+// retrieve data to display later for logged in user
+
+if (isset($_SESSION['username'])) {
+	$username = $_SESSION['username'];
+}
+else {
+	$username = Null;
+}
+
+if ($enable_cache) {
+	// Attemp to get the cached records for the front page
+	$mem = open_memcache_connection($cache_server);
+	$readings = $mem->get("front_page");
+	if (!$readings)
+	{
+		log_debug("Could not find sensor readings in memchache");
+		// If there is no such cached record, get it from the database
+		$readings = get_recent_sensor_values($db, $db_sensor_table, 10, $username);
+		// Then put the record into cache
+		$mem->set("front_page", $readings, time()+86400);
+	}
+}
+else {
+	// This statement get the last 10 records from the database
+	$readings = get_recent_sensor_values($db, $db_sensor_table, 10, $username);
+}
+
+
+if ($username) {
+	$reading = $readings[0];
+	log_debug("First reading for user '$username':".print_r($reading, true));
+
+	if (isset($_SESSION['sloc']) && strlen($_SESSION['sloc']) > 0 ) {
+		$session_sloc = $_SESSION['sloc'];
+		log_debug("Work Location found in session: [$session_sloc]");
+	}
+	else {
+		$session_sloc = $reading["location"];
+		log_debug("Work Location not found in session using default <$session_sloc>.");
+	}
+
+	if (isset($_SESSION['sname']) && strlen($_SESSION['sname']) > 0) {
+		$session_sname = $_SESSION['sname'];
+		log_debug("Sensor Name found in session: [$session_sname]");
+	}
+	else {
+		$session_sname = $reading["sensor_name"];
+		log_debug("Sensor Name not found in session using default <$session_sname>.");
+	}
+
+	if (isset($_SESSION['limit']) && strlen($_SESSION['limit']) > 0) {
+		$session_limit = $_SESSION['limit'];
+		log_debug("Limit found in session: [$session_limit]");
+	}
+	else {
+		$session_limit = "";
+		log_debug("Limit not found in session - parameter is optional");
+	}
 }
 
 ?>
@@ -113,6 +176,9 @@ function help_text() {
  * The second part handles user interface.
  *
  */
+
+log_debug("Displaying page 'index.php'...");
+
 echo "<html>";
 echo "<head>";
 echo "<META http-equiv='Content-Type' content='text/html; charset=UTF-8'>";
@@ -122,34 +188,6 @@ echo "</head>";
 echo "<body>";
 
 if (isset($_SESSION['username'])) {
-	$username = $_SESSION['username'];
-
-	if (isset($_SESSION['sloc'])) {
-		$session_sloc = $_SESSION['sloc'];
-		log_debug("Work Location found in session: [$session_sloc]");
-	}
-	else {
-		$session_sloc = "Work Room";
-		log_debug("Work Location not found in session using default <$session_sloc>.");
-	}
-
-	if (isset($_SESSION['sname'])) {
-		$session_sname = $_SESSION['sname'];
-		log_debug("Sensor Name found in session: [$session_sname]");
-	}
-	else {
-		$session_sname = "";
-		log_debug("Sensor Name not found in session.");
-	}
-
-	if (isset($_SESSION['limit'])) {
-		$session_limit = $_SESSION['limit'];
-		log_debug("Limit found in session: [$session_limit]");
-	}
-	else {
-		$session_limit = "";
-		log_debug("Limit not found in session: [$session_limit]");
-	}
 
 	// This section is shown when user is login
 	echo "<table width=100% border=0>";
@@ -187,7 +225,7 @@ if (isset($_SESSION['username'])) {
 	echo "</form>";
 	echo "<HR>";
 
-	echo "Display diagram for a specific location and a sensor name:<br>&nbsp;<br>";
+	echo "Display diagram for a specific location and a sensor name (Point Limit default is 100):<br>&nbsp;<br>";
 	//echo "<br>";
 	echo "<form action='show_diagram.php' method='get'>";
 		echo "<table border=2>";
@@ -213,7 +251,6 @@ if (isset($_SESSION['username'])) {
 }
 else {
 	// This section is shown when user is not logged in
-	$username = Null;
 	echo "<table width=100% border=0>";
 		echo "<tr>";
 			echo "<td width=\"60%\"><H1>$server</H1></td>";
@@ -236,23 +273,6 @@ else {
 	echo "<br>&nbsp;<br>";
 }
 
-// Get the most recent N images
-if ($enable_cache) {
-	// Attemp to get the cached records for the front page
-	$mem = open_memcache_connection($cache_server);
-	$readings = $mem->get("front_page");
-	if (!$readings)
-	{
-		// If there is no such cached record, get it from the database
-		$readings = get_recent_sensor_values($db, $db_sensor_table, 10, $username);
-		// Then put the record into cache
-		$mem->set("front_page", $readings, time()+86400);
-	}
-}
-else {
-	// This statement get the last 10 records from the database
-	$readings = get_recent_sensor_values($db, $db_sensor_table, 10, $username);
-}
 
 // Display the sensor readings in a table
 echo "<table width=100% border=1>";
